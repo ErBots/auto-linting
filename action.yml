@@ -1,108 +1,223 @@
-name: Prettier Action
-description: Automatically runs prettier on all your changes.
+name: Code Formatter & Linter Action
+description: Automatically format code with Prettier and/or lint with ESLint on all your changes.
 
-author: Conrad Großer <grosserconrad@gmail.com>
+author: Enhanced Code Formatter Action
 
 inputs:
-  commit_message:
-    description: Commit message, will be ignored if used with same_commit
+  # Formatter selection
+  enable_prettier:
+    description: Enable Prettier formatting
     required: false
-    default: "Prettified Code!"
-  commit_description:
-    description: Extended commit message, will be ignored if used with same_commit
+    default: true
+  enable_eslint:
+    description: Enable ESLint linting and auto-fixing
+    required: false
+    default: false
+  enable_stylelint:
+    description: Enable Stylelint for CSS/SCSS linting
+    required: false
+    default: false
+  
+  # Tool versions
+  prettier_version:
+    description: Specific version of prettier (by default use latest)
+    required: false
+    default: "latest"
+  eslint_version:
+    description: Specific version of eslint (by default use latest)
+    required: false
+    default: "latest"
+  stylelint_version:
+    description: Specific version of stylelint (by default use latest)
+    required: false
+    default: "latest"
+  
+  # Tool options
+  prettier_options:
+    description: Options for the `prettier` command
+    required: false
+    default: "--write **/*.{js,jsx,ts,tsx,json,css,scss,md,html,vue}"
+  eslint_options:
+    description: Options for the `eslint` command
+    required: false
+    default: "--fix **/*.{js,jsx,ts,tsx,vue} --ignore-path .gitignore"
+  stylelint_options:
+    description: Options for the `stylelint` command
+    required: false
+    default: "--fix **/*.{css,scss,sass,less} --ignore-path .gitignore"
+  
+  # Plugins and configs
+  prettier_plugins:
+    description: Install Prettier plugins, i.e. `@prettier/plugin-php @prettier/plugin-tailwindcss`
     required: false
     default: ""
+  eslint_plugins:
+    description: Install ESLint plugins and configs, i.e. `@typescript-eslint/eslint-plugin eslint-config-prettier`
+    required: false
+    default: ""
+  stylelint_plugins:
+    description: Install Stylelint plugins, i.e. `stylelint-config-standard stylelint-prettier`
+    required: false
+    default: ""
+  
+  # Auto-install common configs
+  auto_install_configs:
+    description: Auto-install common configs (eslint-config-prettier, @typescript-eslint/*, etc.)
+    required: false
+    default: true
+  
+  # Git commit options
+  commit_message:
+    description: Commit message for formatting changes
+    required: false
+    default: "🎨 Format code with Prettier and ESLint"
+  commit_description:
+    description: Extended commit message description
+    required: false
+    default: "Auto-formatted and linted code using GitHub Action"
   same_commit:
     description: Update the current commit instead of creating a new one
     required: false
     default: false
   commit_options:
-    description: Commit options
+    description: Additional git commit options
     required: false
   push_options:
     description: Git push options
     required: false
+  
+  # File handling
   file_pattern:
-    description: File pattern used for `git add`, can't be used with only_changed or only_changed_pr!
+    description: File pattern used for `git add`, can't be used with only_changed!
     required: false
     default: "*"
-  prettier_options:
-    description: Options for the `prettier` command
-    required: false
-    default: "--write **/*.js"
-  dry:
-    description: Running the script in dry mode just shows whether there are files that should be prettified or not
-    required: false
-    default: false
-  no_commit:
-    description: Can be used to avoid committing the changes (can be combined with dry mode, useful when another workflow steps commits after this commit anyways)
-    required: false
-    default: false
-  prettier_version:
-    description: Specific version of prettier (by default just use the latest version)
-    required: false
-    default: "latest"
-  working_directory:
-    description: Specify a directory to cd into before installing prettier and running it
-    required: false
-    default: ${{ github.action_path }}
   only_changed:
-    description: Only prettify files changed in the last commit, can't be used with file_pattern!
+    description: Only format files changed in the last commit
     required: false
     default: false
   only_changed_pr:
-    description: Only prettify files changed in the current PR.  If specified with only_changed, only_changed will take precedent. Can't be used with file_pattern!
+    description: Only format files changed in the current PR
     required: false
     default: false
-  prettier_plugins:
-    description: Install Prettier plugins, i.e. `@prettier/plugin-php @prettier/plugin-other`
+  ignore_pattern:
+    description: Files/directories to ignore (in addition to .gitignore)
     required: false
-    default: ""
+    default: "node_modules/**,dist/**,build/**,.git/**"
+  
+  # Working directory
+  working_directory:
+    description: Specify a directory to cd into before running tools
+    required: false
+    default: "."
+  
+  # Execution modes
+  dry:
+    description: Run in dry mode - show what would be changed without making changes
+    required: false
+    default: false
+  no_commit:
+    description: Don't commit changes (useful when another step handles commits)
+    required: false
+    default: false
+  fail_on_error:
+    description: Fail the action if linting errors are found (after attempting fixes)
+    required: false
+    default: false
+  
+  # GitHub settings
   github_token:
-    description: GitHub Token or PAT token used to authenticate against a repository
+    description: GitHub Token or PAT token
     required: false
     default: ${{ github.token }}
-  clean_node_folder:
-    description: Remove the node_modules folder before committing changes
-    required: false
-    default: true
   git_identity:
-    description: Which identity is used for git name/email when committing changes. Needs to be one of "actions" or "author".
+    description: Git identity for commits ("actions", "author", or "custom")
     required: false
     default: "actions"
-  allow_other_plugins:
-    description: Allow other plugins to be installed. By default, we are checking if the plugins are actually prettier plugins.
+  git_user_name:
+    description: Custom git user name (only used when git_identity is "custom")
+    required: false
+    default: ""
+  git_user_email:
+    description: Custom git user email (only used when git_identity is "custom")
+    required: false
+    default: ""
+  
+  # Advanced options
+  clean_node_folder:
+    description: Remove node_modules folder before committing
+    required: false
+    default: true
+  create_pr_comment:
+    description: Create PR comment with summary of changes made
+    required: false
+    default: false
+  check_only:
+    description: Only check for issues without fixing (overrides other fix options)
     required: false
     default: false
 
 runs:
   using: "composite"
   steps:
-    - name: Prettify code!
+    - name: Code Formatting and Linting
       shell: bash
-      run: >-
+      run: |
         PATH=$GITHUB_ACTION_PATH/node_modules/.bin:$PATH
         ${{ github.action_path }}/entrypoint.sh
       env:
+        # Tool enables
+        INPUT_ENABLE_PRETTIER: ${{ inputs.enable_prettier }}
+        INPUT_ENABLE_ESLINT: ${{ inputs.enable_eslint }}
+        INPUT_ENABLE_STYLELINT: ${{ inputs.enable_stylelint }}
+        
+        # Versions
+        INPUT_PRETTIER_VERSION: ${{ inputs.prettier_version }}
+        INPUT_ESLINT_VERSION: ${{ inputs.eslint_version }}
+        INPUT_STYLELINT_VERSION: ${{ inputs.stylelint_version }}
+        
+        # Options
+        INPUT_PRETTIER_OPTIONS: ${{ inputs.prettier_options }}
+        INPUT_ESLINT_OPTIONS: ${{ inputs.eslint_options }}
+        INPUT_STYLELINT_OPTIONS: ${{ inputs.stylelint_options }}
+        
+        # Plugins
+        INPUT_PRETTIER_PLUGINS: ${{ inputs.prettier_plugins }}
+        INPUT_ESLINT_PLUGINS: ${{ inputs.eslint_plugins }}
+        INPUT_STYLELINT_PLUGINS: ${{ inputs.stylelint_plugins }}
+        INPUT_AUTO_INSTALL_CONFIGS: ${{ inputs.auto_install_configs }}
+        
+        # Commits
         INPUT_COMMIT_MESSAGE: ${{ inputs.commit_message }}
         INPUT_COMMIT_DESCRIPTION: ${{ inputs.commit_description }}
         INPUT_SAME_COMMIT: ${{ inputs.same_commit }}
         INPUT_COMMIT_OPTIONS: ${{ inputs.commit_options }}
         INPUT_PUSH_OPTIONS: ${{ inputs.push_options }}
+        
+        # Files
         INPUT_FILE_PATTERN: ${{ inputs.file_pattern }}
-        INPUT_PRETTIER_OPTIONS: ${{ inputs.prettier_options }}
-        INPUT_DRY: ${{ inputs.dry }}
-        INPUT_NO_COMMIT: ${{ inputs.no_commit }}
-        INPUT_PRETTIER_VERSION: ${{ inputs.prettier_version }}
         INPUT_ONLY_CHANGED: ${{ inputs.only_changed }}
         INPUT_ONLY_CHANGED_PR: ${{ inputs.only_changed_pr }}
-        INPUT_PRETTIER_PLUGINS: ${{ inputs.prettier_plugins }}
+        INPUT_IGNORE_PATTERN: ${{ inputs.ignore_pattern }}
+        
+        # Directory
         INPUT_WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        
+        # Modes
+        INPUT_DRY: ${{ inputs.dry }}
+        INPUT_NO_COMMIT: ${{ inputs.no_commit }}
+        INPUT_FAIL_ON_ERROR: ${{ inputs.fail_on_error }}
+        INPUT_CHECK_ONLY: ${{ inputs.check_only }}
+        
+        # GitHub
         INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
-        INPUT_CLEAN_NODE_FOLDER: ${{ inputs.clean_node_folder }}
         INPUT_GIT_IDENTITY: ${{ inputs.git_identity }}
-        INPUT_ALLOW_OTHER_PLUGINS: ${{ inputs.allow_other_plugins }}
+        INPUT_GIT_USER_NAME: ${{ inputs.git_user_name }}
+        INPUT_GIT_USER_EMAIL: ${{ inputs.git_user_email }}
+        
+        # Advanced
+        INPUT_CLEAN_NODE_FOLDER: ${{ inputs.clean_node_folder }}
+        INPUT_CREATE_PR_COMMENT: ${{ inputs.create_pr_comment }}
 
 branding:
-  icon: "award"
-  color: "green"
+  icon: "code"
+  color: "blue"
