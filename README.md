@@ -7,16 +7,7 @@
 [![Contributors](https://img.shields.io/github/contributors-anon/creyD/prettier_action)](https://github.com/creyD/prettier_action/graphs/contributors)
 [![Issues](https://img.shields.io/github/issues/creyD/prettier_action)](https://github.com/creyD/prettier_action/issues)
 
-A GitHub action for styling files with [prettier](https://prettier.io).
-
-## Usage
-
-### Parameters
-
-| Parameter | Required | Default | Description |
-| - | :-: | :-: | - |
-| dry | :x: | `false` | Runs the action in dry mode. Files wont get changed and the action fails if there are unprettified files. Recommended to use with prettier_options --check |
-| no_commit | :x: | `false` | Can be used to avoid committing the changes (useful when another workflow step commits after this one anyways; can be combined with dry mode) |
+ after this one anyways; can be combined with dry mode) |
 | prettier_version | :x: | `latest` | Specific prettier version (by default use latest) |
 | working_directory | :x: | `${{ github.action_path }}` | Specify a directory to cd into before installing prettier and running it, use relative file path to the repository root for example `app/` |
 | prettier_options | :x: | `"--write **/*.js"` | Prettier options (by default it applies to the whole repository) |
@@ -128,32 +119,7 @@ jobs:
 ```
 
 #### Example 4 (dry run)
-
-```yaml
-name: Continuous Integration
-
-on:
-  pull_request:
-    branches: [main]
-
-jobs:
-  prettier:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.head_ref }}
-          # Make sure the value of GITHUB_TOKEN will not be persisted in repo's config
-          persist-credentials: false
-
-      - name: Prettify code
-        uses: creyD/prettier_action@v4.5
-        with:
-          dry: True
-          github_token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+${{ secrets.PERSONAL_GITHUB_TOKEN }}
 ```
 
 More documentation for writing a workflow can be found [here](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions).
